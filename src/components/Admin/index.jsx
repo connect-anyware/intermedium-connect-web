@@ -65,7 +65,6 @@ export default function Admin({ showModal, onClose }) {
   };
 
   function openAlert(){
-
     onClose()
   }
 
@@ -110,15 +109,15 @@ export default function Admin({ showModal, onClose }) {
                 <form onSubmit={handleSubmit}>
                     <div className="mb-4">
                         <label htmlFor="environment" className="block text-gray-700 font-semibold mb-1">
-                        Nome do administrador:
+                        Email do administrador:
                         </label>
                         <input
-                        type="text"
+                        type="email"
                         id="environment"
                         value={selectedEnvironment}
                         onChange={handleEnvironmentChange}
                         className="border rounded-md px-3 py-2 w-full"
-                        placeholder="Informe o nome do objeto"
+                        placeholder="Informe o email do objeto"
                         required
                         />
                     </div>
