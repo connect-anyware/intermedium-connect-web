@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import Api from '../../api/service';
-import Modal from '../../components/modal';
 import { useNavigate } from 'react-router-dom';
-import background from './background.png'
+import background from './Intermedium.png'
+import Modal from '../../components/modal';
 function Login({ setIsLoggedIn }) {
   const [name, setName] = useState('')
   const [password, setPassword] = useState('')
@@ -53,13 +53,12 @@ function Login({ setIsLoggedIn }) {
           <form class="mt-6" action="#" method="POST">
             <div>
               <label class="block text-gray-700">Endereço de email:</label>
-              <input type="text" onChange={(e) => setName(e.target.value)} name="" id="" placeholder="Enter Email Address" class="w-full px-4 py-3 rounded-lg bg-gray-200 mt-2 border focus:border-blue-500 focus:bg-white focus:outline-none" autofocus autocomplete required />
+              <input type="text" onChange={(e) => setName(e.target.value)} name="" id="" placeholder="Inserir Endereço de Email" class="w-full px-4 py-3 rounded-lg bg-gray-200 mt-2 border focus:border-blue-500 focus:bg-white focus:outline-none" autofocus autocomplete required />
             </div>
 
             <div class="mt-4">
               <label class="block text-gray-700">Senha:</label>
-              <input onChange={(e) => setPassword(e.target.value)} type="password" name="" id="" placeholder="Enter Password"
-                //  minlength="6" 
+              <input onChange={(e) => setPassword(e.target.value)} type="password" name="" id="" placeholder="Inserir Senha" minlength="6" 
                 class="w-full px-4 py-3 rounded-lg bg-gray-200 mt-2 border focus:border-blue-500
                   focus:bg-white focus:outline-none" required />
             </div>
