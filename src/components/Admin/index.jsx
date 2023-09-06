@@ -120,24 +120,26 @@ export default function Admin({ showModal, onClose }) {
                     <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
 
 
-                <form onSubmit={handleSubmit}>
-                    <div className="mb-4">
-                        <label htmlFor="environment" className="block text-gray-700 font-semibold mb-1">
-                        Email do administrador:
-                        </label>
-                        <input
-                        type="email"
-                        id="environment"
-                        value={selectedEnvironment}
-                        onChange={handleEnvironmentChange}
-                        className="border rounded-md px-3 py-2 w-full"
-                        placeholder="Informe o email do objeto"
-                        required
-                        />
-                    </div>
-                    <select className="border rounded-md px-3 py-2 w-full" onChange={handleCompanyChancge}>
-                        <option value="" disabled>
-                            Selecione uma opção
+
+
+                      <form onSubmit={handleSubmit}>
+                        <div className="mb-4">
+                          <label htmlFor="environment" className="block text-gray-700 font-semibold mb-1">
+                            Email do administrador:
+                          </label>
+                          <input
+                            type="email"
+                            id="environment"
+                            value={selectedEnvironment}
+                            onChange={handleEnvironmentChange}
+                            className="border rounded-md px-3 py-2 w-full"
+                            placeholder="Informe o email do administrador"
+                            required
+                          />
+                        </div>
+                        <select className="border rounded-md px-3 py-2 w-full" onChange={handleCompanyChancge}>
+                          <option value="">
+                            Selecione a empresa
                           </option>
                           {allCompanys && allCompanys.map((item) => {
                             return (
