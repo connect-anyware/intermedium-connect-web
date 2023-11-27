@@ -17,6 +17,7 @@ export function Center({ user }) {
   }
 
   async function copyHash() {
+    console.log(user)
     const copiar = user.loginHash
     try {
       await navigator.clipboard.writeText(copiar);
@@ -28,7 +29,7 @@ export function Center({ user }) {
 
   async function getAllDatas() {
     try {
-      const { data } = await Api.get('/cleaning', {
+      const { data } = await Api.get('/cleaning/recover', {
         params: { userId: user.id }
       });
       setDataLine(data);
@@ -66,36 +67,34 @@ export function Center({ user }) {
           </div>
         </div>
         <div className="flex items-center space-x-3 my-4">
- 
-          <div class="inline-flex rounded-md shadow-sm" role="group">
-            <button type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-blue-900  rounded-s-lg hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
+
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button type="button" className="px-4 py-2 text-sm font-medium text-gray-900 bg-blue-900  rounded-s-lg hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
               Histórico
             </button>
-            <button  onClick={handleSolicitation} type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-transparent  border-b border-gray-900 hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
+            <button onClick={handleSolicitation} type="button" className="px-4 py-2 text-sm font-medium text-gray-900 bg-transparent  border-b border-gray-900 hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
               Agendar
             </button>
-            <button  onClick={handleShowSchudele} type="button" class="px-4 py-2 text-sm font-medium text-gray-900 bg-transparent border-b border-gray-900 rounded-e-lg hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
+            <button onClick={handleShowSchudele} type="button" className="px-4 py-2 text-sm font-medium text-gray-900 bg-transparent border-b border-gray-900 rounded-e-lg hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
               Agendamentos
             </button>
           </div>
 
-            {showSchudele && <Schudeles onClose={handleShowSchudele} datas={user} showModal={showSchudele} />}
+          {showSchudele && <Schudeles onClose={handleShowSchudele} datas={user} showModal={showSchudele} />}
 
         </div>
       </div>
       <div className="sm:p-7 p-4">
         <div className="flex w-full items-center mb-7">
           <div className="ml-auto text-gray-500 text-xs sm:inline-flex hidden items-center">
-            {user && user.active ? (
-              <span className="text-white inline-flex mr-2 bg-green-900 p-8 items-center h-8 w-8 justify-center text-black-600 rounded-md shadow border border-gray-200 dark:border-gray-800 leading-none py-0">Ativo</span>
-
-            ) : (
-              <span className="text-white inline-flex mr-2 bg-orange-900 p-8 items-center h-8 w-8 justify-center text-black-600 rounded-md shadow border border-gray-200 dark:border-gray-800 leading-none py-0">Inativo</span>
-
-            )}
+            <button className="text-white inline-flex  bg-green-900 px-16 items-center h-8 w-8 text-base justify-center text-black-600 rounded-md shadow border border-gray-200 dark:border-gray-800 leading-none py-0">Relatório</button>
           </div>
         </div>
+        {dataLine.length == 0 ? (
+          <div className="text-lg text-center text-white justify-center tracking-wider w-full h-10 bg-red-600"> - Usuários Sem histórico - </div>
+        ) : null}
         <table className="w-full text-left">
+
           <thead>
             <tr className="text-gray-400">
               <th className="font-normal px-3 pt-0 pb-3 border-b border-gray-200 dark:border-gray-800">Início</th>
@@ -105,6 +104,7 @@ export function Center({ user }) {
               <th className="font-normal px-3 pt-0 pb-3 border-b border-gray-200 dark:border-gray-800 sm:text-gray-400 text-white">Atualização</th>
             </tr>
           </thead>
+
           <tbody className="text-gray-600 dark:text-gray-100">
             {dataLine && dataLine.map((clear) => {
               return (
