@@ -3,30 +3,21 @@ import { Dialog, Transition } from '@headlessui/react';
 import React from 'react';
 import Api from '../../api/service';
 import Alert from '../alert';
+import Select from 'react-select'
+import Calendario from '../calendar/calendario';
 
 export default function Solicitation({ showModal, onClose, datas }) {
   const [objectsOptions, setObjectsOptions] = useState([])
   const [placesOptions, setPlacesOptions] = useState([])
   const [selectForSend, setSelectForSend] = useState([])
   const [placesForSend, setPlacesForSend] = useState('')
-  const [daysOfWeek, setDaysOfWeek] = useState([
-    { dia: "Segunda-feira", value: 1 },
-    { dia: "Terça-feira", value: 2 },
-    { dia: "Quarta-feira", value: 3 },
-    { dia: "Quinta-feira", value: 4 },
-    { dia: "Sexta-feira", value: 5 },
-    { dia: "Sabado", value: 6 },
-    { dia: "Domingo", value: 0 },
-  ])
-  const [horsOfDay, setHorsOfDay] = useState([
-    '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '00'
-  ])
+  const [horsSelected, setHorsSelected] = useState([])
+
+
 
   const [repeat, setRepeat] = useState(false)
   const [sucess, setSucess] = useState(null)
 
-  const [daySelected, setDaySelected] = useState('')
-  const [horsSelected, setHorsSelected] = useState('')
 
   const [automated, setAutomated] = useState(false)
 
@@ -43,15 +34,28 @@ export default function Solicitation({ showModal, onClose, datas }) {
   async function findObjects() {
     try {
       const [object, place] = await Promise.all([
-        Api.get('object', { data: { companyId: datas.id } }),
-        Api.get('place', { data: { companyId: datas.id } })
+        Api.get('objects/recover', {
+          params: {
+            companyId: datas.companyId
+          }
+        }),
+        Api.get('place/recover', {
+          params: {
+            companyId: datas.companyId
+          }
+        })
       ]);
 
-      setObjectsOptions(object.data);
+      const objectForSelect = object.data.map((item) => {
+        return { label: item.name, value: item.id }
+      })
+      setObjectsOptions(objectForSelect);
+
       setPlacesOptions(place.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
     }
-    catch (error) {
-    }
+
 
 
 
@@ -64,13 +68,6 @@ export default function Solicitation({ showModal, onClose, datas }) {
   }, [])
 
 
-  const handleObjectChange = (event) => {
-    if (event.target.value == '') return
-    const exist = selectForSend.find((item) => item.id == event.target.value)
-    if (exist) return
-    const idSelect = objectsOptions.find((item) => item.id == event.target.value)
-    setSelectForSend([...selectForSend, idSelect])
-  };
   const handlePlacesChange = (event) => {
     if (event.target.value == '') return
     const idSelect = placesOptions.find((item) => item.id == event.target.value)
@@ -78,44 +75,42 @@ export default function Solicitation({ showModal, onClose, datas }) {
   }
 
 
-  function handleExclusion(item) {
-    const exclusion = selectForSend.filter((object) => object.id != item.id)
-    setSelectForSend(exclusion)
-  }
-
   const handleSubmit = async (event) => {
     event.preventDefault()
     setShowAlert(true)
+    let route;
 
-    if (placesForSend === '' || selectForSend.length == 0) {
+    if (placesForSend === '') {
       setShowAlert(false)
       setSucess('error')
       return
     }
-    const objects = []
-
-    for (const object of selectForSend) {
-      objects.push(object.id)
-    }
 
 
-    var d = new Date();
-    d.setDate(d.getDate() + (parseInt(daySelected) + 7 - d.getDay()) % 7);
-    d.setHours(parseInt(horsSelected), 0, 0, 0)
+
+    const objectsId = selectForSend.map((item) => {
+      return item[0].value
+    })
+
+    const horsSelectedForSend = horsSelected.map((item) => {
+      return item.start
+    })
 
     const send = {
-      responsibleId: datas.id,
       placeId: placesForSend,
-      objects,
-      automated,
-      userId:datas.id,
-      repeatable:repeat,
-      eventDate:automated? d: new Date(),
+      objectsId,
+      userId: datas.id,
+      repeatable: repeat,
+      eventDate: horsSelectedForSend || new Date(),
     }
-  
 
+    if (automated) {
+      route = 'schedule/create'
+    } else {
+      route = 'cleaning/create'
+    }
     try {
-      await Api.post('schedule/', send)
+      await Api.post(route, send)
       setSucess('sucess')
       setShowAlert(false)
     }
@@ -126,22 +121,14 @@ export default function Solicitation({ showModal, onClose, datas }) {
 
   };
 
+  function catchHors(horsArray) {
+    setHorsSelected(horsArray)
+  }
   function openAlert() {
     handleClose()
     setShowAlert(!showAlert)
   }
 
-  function handleSelectDay(event) {
-    setDaySelected(event.target.value)
-  }
-
-  function handleSelectHors(event) {
-    setHorsSelected(event.target.value)
-  }
-
-  function handleRepeat(event) {
-    setRepeat(!repeat)
-  }
 
 
   return (
@@ -159,7 +146,7 @@ export default function Solicitation({ showModal, onClose, datas }) {
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
+          <div className="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" />
         </Transition.Child>
 
         <div className="fixed inset-0 z-10 overflow-y-auto ">
@@ -199,7 +186,7 @@ export default function Solicitation({ showModal, onClose, datas }) {
                     <svg className="fill-current opacity-75 h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M12.95 10.707l.707-.707L8 4.343 6.586 5.757 10.828 10l-4.242 4.243L8 15.657l4.95-4.95z" /></svg>
                   </div>
                 </div>
-                <div className="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                <div className="bg-gray-900 px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
                   <div className="flex flex-col items-center justify-center">
 
                     <div className="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
@@ -208,10 +195,10 @@ export default function Solicitation({ showModal, onClose, datas }) {
 
                       <form>
                         <div className="mb-4">
-                          <label htmlFor="object" className="block text-gray-700 font-semibold mb-1">
+                          <label htmlFor="object" className="block text-gray-700 font-semibold mb-1 text-white">
                             Ambiente:
                           </label>
-                          <select className="border rounded-md px-3 py-2 w-full" onChange={handlePlacesChange}>
+                          <select className="border rounded-md px-3 py-2 w-full bg-gray-600 text-white" onChange={handlePlacesChange}>
                             <option value="">
                               Selecione um ambiente
                             </option>
@@ -223,75 +210,37 @@ export default function Solicitation({ showModal, onClose, datas }) {
                           </select>
                         </div>
                         <div className="mb-4">
-                          <label htmlFor="object" className="block text-gray-700 font-semibold mb-1">
+                          <label htmlFor="object" className="block text-gray-700 font-semibold mb-1 text-white">
                             Objeto:
                           </label>
-                          <select className="border rounded-md px-3 py-2 w-full" onChange={handleObjectChange}>
-                            <option value="" >
-                              Selecione um objeto
-                            </option>
-                            {objectsOptions.map((item) => {
-                              return (
-                                <option key={item.id} value={item.id}>{item.name}</option>
+                          <Select
+                            isMulti
+                            name="Objetos"
+                            options={objectsOptions}
+                            onChange={(item) => setSelectForSend((oldState) => [...oldState, item])}
+                            className="border rounded-md px-3 py-2 w-full bg-gray-600 text-black"
+                            classNamePrefix="select"
+                          />
 
-                              )
-                            })}
-                          </select>
+
                         </div>
 
                         <Dialog.Title as="h3" className="text-base leading-6 text-gray-900 flex flex-row items-center justify-around m-4 ">
-                          {selectForSend.map((item) => {
-                            return (
-                              <button type='button' className="bg-red-600 text-white font-semibold px-4 py-2 rounded-full cursor-pointer" key={item.id} onClick={() => handleExclusion(item)}>
-                                {item.name}
-                              </button>
-                            )
-                          })}
+
                         </Dialog.Title>
                         {automated ? (
-                          <div className='flex flex-row items-center'>
-                            <div className="mb-4">
-                              <label htmlFor="object" className="block text-gray-700 font-semibold mb-1">
-                                Dia da semana:
-                              </label>
-                              <select className="border rounded-md px-3 py-2 w-40" onChange={handleSelectDay}>
-                                <option value="" >
-                                  Dia
-                                </option>
-                                {daysOfWeek.map((item) => {
-                                  return (
-                                    <option value={item.value}>{item.dia}</option>
-
-                                  )
-                                })}
-                              </select>
-                            </div>
-                            <div className="mb-4">
-                              <label htmlFor="object" className="block text-gray-700 font-semibold mb-1">
-                                Horário:
-                              </label>
-                              <select className="border rounded-md px-3 py-2 w-40" onChange={handleSelectHors}>
-                                <option value="">
-                                  Horário
-                                </option>
-                                {horsOfDay.map((item) => {
-                                  return (
-                                    <option value={item}>{item}</option>
-
-                                  )
-                                })}
-                              </select>
-
-                            </div>
+                          <>
+                            <Calendario catchHors={catchHors} />
                             <div className="flex flex-col  items-center m-4 dark:border-gray-700">
-                              <input onChange={handleRepeat} id="bordered-checkbox-1" type="checkbox" value="" name="bordered-checkbox" className=" text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
-                              <label for="bordered-checkbox-1" className=" text-sm font-medium text-gray-600 dark:text-gray-600">Repeat</label>
+                              <input onChange={() =>setRepeat(!repeat)} id="bordered-checkbox-1" type="checkbox" value="" name="bordered-checkbox" className=" text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600" />
+                              <label for="bordered-checkbox-1" className=" text-xl font-medium text-white ">REPETIR</label>
                             </div>
-                          </div>
+                          </>
+
+
 
 
                         ) : null}
-
                         < div className='flex flex-row  justify-around w-full '>
                           <button
                             type='button'
@@ -313,7 +262,7 @@ export default function Solicitation({ showModal, onClose, datas }) {
                     </div>
                   </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                <div className="bg-gray-900 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
                   <button
                     type="button"
                     className="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"

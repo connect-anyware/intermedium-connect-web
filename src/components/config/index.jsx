@@ -2,29 +2,36 @@ import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import Api from '../../api/service';
 import Alert from '../alert';
-
+import { Modal } from '../modal/index.tsx';
 
 export default function Config({ showModal, onClose, companyId }) {
 
   const [loading, setLoading] = useState(null)
-  const [sucess, setSucess] = useState(null)
-  const [message, setMessage] = useState('')
   const [objects, setObjects] = useState([])
   const [places, setPlaces] = useState([])
   const [users, setUsers] = useState([])
   const [companys, setCompanys] = useState([])
 
+  const [selectArgFromCreate, setSelectArgFromCreate] = useState('')
+  const [nameOfCreation, setNameOfCreation] = useState('')
+  const [emailOfCreation, setEmailOfCreation] = useState('')
   const [fixObj, setFixObj] = useState([])
 
+  const [route, setRoute] = useState('')
   const [check, setCheck] = useState([])
 
   const [create, setCreate] = useState(false)
+  const [usersEdit, setUsersEdit] = useState(false)
 
 
   const id = localStorage.getItem('token')
   const handleClose = () => {
     onClose();
+  };
 
+  const showComponent = () => {
+    setFixObj([]);
+    setUsersEdit(!usersEdit);
   };
 
 
@@ -32,10 +39,10 @@ export default function Config({ showModal, onClose, companyId }) {
     setLoading(true)
     try {
       const [object, place, users, company] = await Promise.all([
-        Api.get('object', { data: { companyId: companyId.companys.id } }),
-        Api.get('place', { data: { companyId: companyId.companys.id } }),
-        Api.get('/user/allUsers', { params: { id } }),
-        Api.get('company/all')
+        Api.get('objects/recover', { params: { companyId: companyId.companys.id } }),
+        Api.get('place/recover', { params: { companyId: companyId.companys.id } }),
+        Api.get('/user/recover', { params: { companyId: companyId.companys.id } }),
+        Api.get('companies/recover')
       ]);
       setLoading(false)
       setObjects(object.data)
@@ -45,73 +52,145 @@ export default function Config({ showModal, onClose, companyId }) {
     }
     catch (error) {
       setLoading(false)
-      setSucess('error')
-    }
 
-
-  }
-
-
-
-
-
-
-  async function deletionPlace(placeId) {
-    setLoading(true)
-    try {
-      await Api.delete('/place', {
-        params: {
-          placeId: placeId.id
-        }
+      await Swal.fire({
+        icon: 'error',
+        title: 'Erro ao recuperar dados',
+        showDenyButton: true,
+        showCancelButton: false,
+        showConfirmButton: true,
+        denyButtonText: 'Cancelar',
+        confirmButtonText: 'Confirmar'
       })
-      setMessage('Ambiente deletado com sucesso')
-      setSucess('sucess')
-      retriveDatas()
-    } catch (error) {
-      setLoading(false)
-      setMessage('Ambiente sendo usado em alguma solicitação')
-      setSucess('error')
     }
-  }
 
-  async function DeleteObject(objectId) {
-    setLoading(true)
-    try {
-      await Api.delete('/object', {
-        params: {
-          objectId: objectId.id
-        }
-      })
-      setMessage('Objeto deletado com sucesso')
-      setSucess('sucess')
-      retriveDatas()
-    } catch (error) {
-      setLoading(false)
-      setMessage('Objeto sendo usado em alguma solicitação')
-      setSucess('error')
-    }
   }
 
 
-  function handleSelect(datas) {
+  async function deletion() {
+    const confirm = await Swal.fire({
+      icon: 'info',
+      title: 'Deseja realizar a deleção?',
+      showDenyButton: true,
+      showCancelButton: false,
+      showConfirmButton: true,
+      denyButtonText: 'Cancelar',
+      confirmButtonText: 'Confirmar'
+    })
+    if (confirm.isDenied) return
+
+
+    check.map(async (item) => {
+      setLoading(true)
+      let params = {}
+      params[`${route}Id`] = item
+      try {
+        await Api.delete(`${selectArgFromCreate}/delete`, {
+          params
+        })
+        await Swal.fire({
+          icon: 'success',
+          title: 'Deleção bem sucedida',
+          showDenyButton: true,
+          showCancelButton: false,
+          showConfirmButton: true,
+          denyButtonText: 'Cancelar',
+          confirmButtonText: 'Confirmar'
+        })
+        await retriveDatas()
+      } catch (error) {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Não foi possível deletar',
+          showDenyButton: true,
+          showCancelButton: false,
+          showConfirmButton: true,
+          denyButtonText: 'Cancelar',
+          confirmButtonText: 'Confirmar'
+        })
+      }
+    })
+  }
+
+
+  function handleSelect(datas, routeCurrent) {
+    setRoute(routeCurrent)
+    retriveDatas()
     setFixObj([])
     setCheck([])
     setCreate(false)
+    setSelectArgFromCreate(routeCurrent)
     datas.map((item) => {
       let obj = {};
       obj['id'] = item.id;
       obj['name'] = item.name || '';
       obj['hash'] = item.loginHash || ''
-      obj['status'] = item.active || ''
+      obj['role'] = item.role || ''
       setFixObj((oldstate) => [...oldstate, obj])
     })
-
   }
   function openAlert() {
     loading(!showAlert)
   }
+  async function handleCreation() {
+    const confirm = await Swal.fire({
+      icon: 'info',
+      title: `Deseja cadastrar ${selectArgFromCreate}?`,
+      showDenyButton: true,
+      showCancelButton: false,
+      showConfirmButton: true,
+      denyButtonText: 'Cancelar',
+      confirmButtonText: 'Confirmar'
+    })
+    if (confirm.isDenied) return
+    setLoading(true)
+    if (nameOfCreation === '') {
+      await Swal.fire({
+        icon: 'info',
+        title: 'Campo de nome vazio',
+        showDenyButton: true,
+        showCancelButton: false,
+        showConfirmButton: true,
+        denyButtonText: 'Cancelar',
+        confirmButtonText: 'Confirmar'
+      })
+      setLoading(false)
 
-  function handleShowCreation() {
+      return
+    }
+    const send = {
+      companyId: companyId.companys.id,
+      name: nameOfCreation,
+      email: emailOfCreation
+    }
+
+    try {
+      await Api.post(`${selectArgFromCreate}/create`, send)
+      setLoading(false)
+      await Swal.fire({
+        icon: 'success',
+        title: 'Criação bem sucessedida',
+        showDenyButton: true,
+        showCancelButton: false,
+        showConfirmButton: true,
+        denyButtonText: 'Cancelar',
+        confirmButtonText: 'Confirmar'
+      })
+    }
+    catch (error) {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Erro ao efetuar criação',
+        showDenyButton: true,
+        showCancelButton: false,
+        showConfirmButton: true,
+        denyButtonText: 'Cancelar',
+        confirmButtonText: 'Confirmar'
+      })
+      setLoading(false)
+
+    }
+
 
   }
 
@@ -123,9 +202,11 @@ export default function Config({ showModal, onClose, companyId }) {
     });
   }
 
+
+
   useEffect(() => {
     retriveDatas()
-  }, [])
+  }, [route])
 
   return (
     <Transition.Root show={showModal} as={Fragment}>
@@ -158,35 +239,46 @@ export default function Config({ showModal, onClose, companyId }) {
               leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
             >
               <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-gray-900 text-center shadow-xl m-4 transition-all sm:my-8 sm:w-full min-w-lg">
-                {sucess == 'sucess' ? (
-                  <div role="alert">
-                    <div className="bg-green-500 text-white font-bold rounded-t px-4 py-2">
-                      Sucesso!
-                    </div>
-                    <div className="border border-t-0 border-red-400 rounded-b bg-red-100 px-4 py-3 text-red-700">
-                      <p>{message}</p>
-                    </div>
-                  </div>
 
-                ) : sucess == 'error' ? (
-                  <div role="alert">
-                    <div className="bg-red-500 text-white font-bold rounded-t px-4 py-2">
-                      Erro!
-                    </div>
-                    <div className="border border-t-0 border-red-400 rounded-b bg-red-100 px-4 py-3 text-red-700">
-                      <p>{message}</p>
-                    </div>
-                  </div>
-
-                ) : null}
 
                 {create ? (
 
                   <div className='my-20 align-center flex flex-col justify-center'>
-                    <input type="text" id="website-admin" className="rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block  min-w-0 w-2/3 align-center self-center text-sm p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Informe um nome" />
+
+                    <label for="countries" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Criação de:</label>
+                    <select selected onChange={(value) => setSelectArgFromCreate(value.target.value)} id="countries" class="m-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-2/3 p-2.5 dark:bg-gray-700 align-center self-center dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                      <option hidden  >Selecione</option>
+                      <option value="objects">Objetos</option>
+                      <option value="place">Ambientes</option>
+                      <option value="companies">Empresa</option>
+                      <option value="manager">Administrador</option>
+                    </select>
+                    {selectArgFromCreate == 'manager' ? (
+                      <>
+                        <select selected id="countries" class="m-3 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-2/3 p-2.5 dark:bg-gray-700 align-center self-center dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                          <option hidden>Selecione a empresa</option>
+                          {companys.map((item) => {
+                            return (
+                              <option value="Administrador">{item.name}</option>
+
+                            )
+                          })}
+                        </select>
+                        <input onChange={(value) => setNameOfCreation(value.target.value)} type="text" id="website-admin" class="my-4 rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block  min-w-0 w-2/3 align-center self-center text-sm p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Informe o nome" />
+                        <input onChange={(value) => setEmailOfCreation(value.target.value)} type="email" id="website-admin" class="rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block  min-w-0 w-2/3 align-center self-center text-sm p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Informe o email" />
+
+                      </>
+
+                    ) : (
+                      <input onChange={(value) => setNameOfCreation(value.target.value)} type="text" id="website-admin" class="rounded-none rounded-e-lg bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block  min-w-0 w-2/3 align-center self-center text-sm p-2.5  dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" placeholder="Informe o nome" />
+
+                    )}
+
                     <div className='m-6'>
-                      <button type="button" className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Criar</button>
+                      <button onClick={handleCreation} type="button" class="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Criar</button>
                     </div>
+
+
                   </div>
                 ) : null}
                 <div>
@@ -223,17 +315,18 @@ export default function Config({ showModal, onClose, companyId }) {
                           <li >
                             <a href="#" className="block py-2 pl-3 pr-4 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500" aria-current="page">CONFIGURAÇÕES</a>
                           </li>
-                          <li onClick={() => handleSelect(users)}>
-                            <a href="#" className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700" aria-current="page">Usuários</a>
+                          <li onClick={() => handleSelect(users, 'user')}>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700" aria-current="page">Usuários</a>
                           </li>
-                          <li onClick={() => handleSelect(objects)}>
-                            <a href="#" className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Objetos</a>
+                          <li onClick={() => handleSelect(objects, 'objects')}>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Objetos</a>
                           </li>
-                          <li onClick={() => handleSelect(places)}>
-                            <a href="#" className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Ambientes</a>
+                          <li onClick={() => handleSelect(places, 'place')}>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Ambientes</a>
                           </li>
-                          <li onClick={() => handleSelect(companys)}>
-                            <a href="#" className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Empresas</a>
+                          <li onClick={() => handleSelect(companys, 'companies')}>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Empresas</a>
+
                           </li>
                           <li >
                             <a href="#" className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 md:dark:hover:text-blue-500 dark:text-white dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Administradores</a>
@@ -242,14 +335,46 @@ export default function Config({ showModal, onClose, companyId }) {
                       </div>
                     </div>
                   </nav>
+                  {usersEdit == true && route == 'users'? (
+                        <Modal.Root closeModal={() => {
+                          showComponent(false)
+                        }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                         <Modal.Office />
+                         <Modal.Button />
+                        </Modal.Root>
+                  ): usersEdit == true && route == 'object'? (
+                        <Modal.Root closeModal={() => {
+                          showComponent(false)
+                        }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                          <Modal.Content text='Mesa' />
+                          <Modal.Button />
+                        </Modal.Root>
+                  ): usersEdit == true && route == 'place'? (
+                    <Modal.Root closeModal={() => {
+                      showComponent(false)
+                    }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                      <Modal.Content text='Sala' />
+                      <Modal.Button />
+                    </Modal.Root>
+                  ): usersEdit == true && route == 'company'? (
+                    <Modal.Root closeModal={() => {
+                      showComponent(false)
+                    }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                      <Modal.Screen />
+                    </Modal.Root>
+                  ): null}
                   <div className='flex flex-row my-8 justify-between w-full '>
                     {fixObj.length != 0 ? (
                       <div className='flex flex-col'>
-                        <button type="button" onClick={() => {setCreate(!create); setFixObj([])}} className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Criar</button>
+
+                        <button type="button" onClick={() => { setCreate(!create); setFixObj([]) }} class="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Criar</button>
                         {check.length != 0 ? (
                           <>
-                            <button type="button" className="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Editar</button>
-                            <button type="button" className="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">Excluir</button>
+                            {check.length == 1 ? (
+                              <button type="button" onClick={() => showComponent(route)} class="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Editar</button>
+                            ): null}
+                            <button type="button" onClick={deletion} class="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">Excluir</button>
+
                           </>
 
                         ) : (
@@ -277,7 +402,7 @@ export default function Config({ showModal, onClose, companyId }) {
                                 HASH
                               </th>
                               <th scope="col" className="px-6 py-3">
-                                Category
+                                POSIÇÃO
                               </th>
                               <th scope="col" className="px-6 py-3">
 
@@ -307,7 +432,7 @@ export default function Config({ showModal, onClose, companyId }) {
                                   {item.hash}
                                 </td>
                                 <td className="px-6 py-4">
-                                  {item.status}
+                                  {item.role}
                                 </td>
                                 <td>
                                   {

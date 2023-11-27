@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import Line from "../line"
 import Solicitation from "../solicitation";
 import Api from "../../api/service";
-import Example from "../dropdown";
 import Schudeles from "../schudeles";
 
 export function Center({ user }) {
@@ -18,6 +17,7 @@ export function Center({ user }) {
   }
 
   async function copyHash() {
+    console.log(user)
     const copiar = user.loginHash
     try {
       await navigator.clipboard.writeText(copiar);
@@ -29,7 +29,7 @@ export function Center({ user }) {
 
   async function getAllDatas() {
     try {
-      const { data } = await Api.get('/cleaning', {
+      const { data } = await Api.get('/cleaning/recover', {
         params: { userId: user.id }
       });
       setDataLine(data);
@@ -43,7 +43,9 @@ export function Center({ user }) {
 
   useEffect(() => {
     getAllDatas()
-  }, [])
+  }, [user])
+
+
 
   return (
     <div className="flex-grow bg-white dark:bg-gray-900 overflow-y-auto">
@@ -64,15 +66,20 @@ export function Center({ user }) {
             </button>
           </div>
         </div>
-        <div className="flex items-center space-x-3 ">
-          <a href="#" className="px-3 border-b-2 border-blue-500 text-blue-500 dark:text-white dark:border-white pb-1.5">Histórico</a>
-          <a href="#" className="px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 pb-1.5 line-through">
+        <div className="flex items-center space-x-3 my-4">
 
-          </a>
-          <a href="#" className="px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 pb-1.5 sm:block hidden line-through">Cronograma</a>
-          <a href="#" className="px-3 border-b-2 border-transparent text-gray-600 dark:text-gray-400 pb-1.5 sm:block hidden line-through">Notificações</a>
-          <a href="#" onClick={handleSolicitation} className="px-3 border-b-2 border-transparent text-white  pb-1.5 sm:block hidden bg-blue-500 rounded-md shadow py-2 m-4 ">Nova solicitação</a>
-          <a href="#" onClick={handleShowSchudele} className="px-3 border-b-2 border-transparent text-white  pb-1.5 sm:block hidden bg-blue-500 rounded-md shadow py-2 m-4 ">Agenda</a>
+          <div className="inline-flex rounded-md shadow-sm" role="group">
+            <button type="button" className="px-4 py-2 text-sm font-medium text-gray-900 bg-blue-900  rounded-s-lg hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
+              Histórico
+            </button>
+            <button onClick={handleSolicitation} type="button" className="px-4 py-2 text-sm font-medium text-gray-900 bg-transparent  border-b border-gray-900 hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
+              Agendar
+            </button>
+            <button onClick={handleShowSchudele} type="button" className="px-4 py-2 text-sm font-medium text-gray-900 bg-transparent border-b border-gray-900 rounded-e-lg hover:bg-gray-900 hover:text-white focus:z-10 focus:ring-2 focus:ring-gray-500 focus:bg-gray-900 focus:text-white dark:border-white dark:text-white dark:hover:text-white dark:hover:bg-gray-700 dark:focus:bg-gray-700">
+              Agendamentos
+            </button>
+          </div>
+
           {showSchudele && <Schudeles onClose={handleShowSchudele} datas={user} showModal={showSchudele} />}
 
         </div>
@@ -80,16 +87,14 @@ export function Center({ user }) {
       <div className="sm:p-7 p-4">
         <div className="flex w-full items-center mb-7">
           <div className="ml-auto text-gray-500 text-xs sm:inline-flex hidden items-center">
-            {user && user.active ? (
-              <span className="inline-flex mr-2 bg-green-300 p-8 items-center h-8 w-8 justify-center text-black-600 rounded-md shadow border border-gray-200 dark:border-gray-800 leading-none py-0">Ativo</span>
-
-            ) : (
-              <span className="inline-flex mr-2 bg-orange-300 p-8 items-center h-8 w-8 justify-center text-black-600 rounded-md shadow border border-gray-200 dark:border-gray-800 leading-none py-0">Inativo</span>
-
-            )}
+            <button className="text-white inline-flex  bg-green-900 px-16 items-center h-8 w-8 text-base justify-center text-black-600 rounded-md shadow border border-gray-200 dark:border-gray-800 leading-none py-0">Relatório</button>
           </div>
         </div>
+        {dataLine.length == 0 ? (
+          <div className="text-lg text-center text-white justify-center tracking-wider w-full h-10 bg-red-600"> - Usuários Sem histórico - </div>
+        ) : null}
         <table className="w-full text-left">
+
           <thead>
             <tr className="text-gray-400">
               <th className="font-normal px-3 pt-0 pb-3 border-b border-gray-200 dark:border-gray-800">Início</th>
@@ -99,6 +104,7 @@ export function Center({ user }) {
               <th className="font-normal px-3 pt-0 pb-3 border-b border-gray-200 dark:border-gray-800 sm:text-gray-400 text-white">Atualização</th>
             </tr>
           </thead>
+
           <tbody className="text-gray-600 dark:text-gray-100">
             {dataLine && dataLine.map((clear) => {
               return (
