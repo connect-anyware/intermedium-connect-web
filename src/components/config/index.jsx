@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import Api from '../../api/service';
 import Alert from '../alert';
-import Modal from '../popup';
+import { Modal } from '../modal/index.tsx';
 
 export default function Config({ showModal, onClose, companyId }) {
 
@@ -25,11 +25,9 @@ export default function Config({ showModal, onClose, companyId }) {
   const [usersEdit, setUsersEdit] = useState(false)
 
 
-
   const id = localStorage.getItem('token')
   const handleClose = () => {
     onClose();
-
   };
 
   const showComponent = () => {
@@ -99,7 +97,6 @@ export default function Config({ showModal, onClose, companyId }) {
       obj['status'] = item.active || ''
       setFixObj((oldstate) => [...oldstate, obj])
     })
-
   }
   function openAlert() {
     loading(!showAlert)
@@ -286,9 +283,34 @@ export default function Config({ showModal, onClose, companyId }) {
                       </div>
                     </div>
                   </nav>
-                  {usersEdit && <Modal userId={check} closeModal={() => {
-                    setUsersEdit(false)
-                  }}/>}
+                  {usersEdit == true && route == 'users'? (
+                        <Modal.Root closeModal={() => {
+                          showComponent(false)
+                        }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                         <Modal.Office />
+                         <Modal.Button />
+                        </Modal.Root>
+                  ): usersEdit == true && route == 'object'? (
+                        <Modal.Root closeModal={() => {
+                          showComponent(false)
+                        }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                          <Modal.Content text='Mesa' />
+                          <Modal.Button />
+                        </Modal.Root>
+                  ): usersEdit == true && route == 'place'? (
+                    <Modal.Root closeModal={() => {
+                      showComponent(false)
+                    }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                      <Modal.Content text='Sala' />
+                      <Modal.Button />
+                    </Modal.Root>
+                  ): usersEdit == true && route == 'company'? (
+                    <Modal.Root closeModal={() => {
+                      showComponent(false)
+                    }} className='bg-gray-900 fixed z-30 top-0 right-0 bottom-0 left-0 flex items-center flex-col'>
+                      <Modal.Screen />
+                    </Modal.Root>
+                  ): null}
                   <div className='flex flex-row my-8 justify-between w-full '>
                     {fixObj.length != 0 ? (
                       <div className='flex flex-col'>
@@ -297,8 +319,8 @@ export default function Config({ showModal, onClose, companyId }) {
                         {check.length != 0 ? (
                           <>
                             {check.length == 1 ? (
-                              <button type="button" onClick={showComponent} class="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Editar</button>
-                            ) : null}
+                              <button type="button" onClick={() => showComponent(route)} class="text-blue-700 hover:text-white border border-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-blue-500 dark:text-blue-500 dark:hover:text-white dark:hover:bg-blue-500 dark:focus:ring-blue-800">Editar</button>
+                            ): null}
                             <button type="button" onClick={deletion} class="text-red-700 hover:text-white border border-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center me-2 mb-2 dark:border-red-500 dark:text-red-500 dark:hover:text-white dark:hover:bg-red-600 dark:focus:ring-red-900">Excluir</button>
 
                           </>
